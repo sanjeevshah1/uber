@@ -23,15 +23,26 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        select: false
     },
     socketId: {
         type: String,
     }
 })
 
-userSchema.pre("save", async function(next){
+
+userSchema.methods.generateJWT = function() : string{
     const user = this as UserDocument;
+    const privateKey = config.get<string>("privateKey");
+    console.log("THe private key is", privateKey);
+    const token = jwt.sign({_id : user._id}, privateKey,  { algorithm: "RS256", expiresIn: "1h" })
+    return token;
+}
+userSchema.methods.comparePassword = async function(candidatePassword: string) : Promise<boolean>{
+    const user = this as UserDocument;
+    return bcrypt.compare(candidatePassword, user.password).catch((error)=> false );
+}
+userSchema.pre("save", async function(next){
+    const user = this;
     if(!user.isModified("password")) return next();
     const saltFactor = config.get<number>("saltFactor");
     const salt = await bcrypt.genSalt(saltFactor);
@@ -40,20 +51,6 @@ userSchema.pre("save", async function(next){
     next();
 })
 
-userSchema.methods.generateJWT = function(){
-    const user = this as UserDocument;
-    const privateKey = config.get<string>("privateKey");
-    const token = jwt.sign({_id : user._id}, privateKey)
-    return token;
-}
-userSchema.methods.comparePassword = async function(candidatePassword: string) : Promise<boolean>{
-    const user = this as UserDocument;
-    return bcrypt.compare(candidatePassword, user.password).catch((error)=> false );
-}
-
-userSchema.statics.hashPassword = async function(password: string) : Promise<string>{
-    return await bcrypt.hash(password, 10)
-}
 
 export interface UserDocument extends mongoose.Document{
     name: {
@@ -62,7 +59,10 @@ export interface UserDocument extends mongoose.Document{
     };
     email: string;
     password: string;
-    socketId: string;
+    generateJWT() :string;
+    comparePassword(candidatePassword: string): Promise<boolean>;
+    socketId?: string;
 }
-const User = mongoose.model("User",userSchema)
+export type UserDocumentWithoutPassword = Omit<UserDocument, "password">
+const User = mongoose.model<UserDocument>("User",userSchema)
 export default User
