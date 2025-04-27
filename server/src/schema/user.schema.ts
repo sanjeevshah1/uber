@@ -15,3 +15,13 @@ export const registerUserSchema = z.object({
    })
 })
 export type RegisterUserType = TypeOf<typeof registerUserSchema>
+
+export const loginUserSchema = z.object({
+    body: z.object({
+        email: z.string({
+            required_error: "Email is required"
+        }).email("Not a vaild email"),
+        password: z.string({}).min(6, "Password must be atleast 6 characters long")
+    })
+})
+export type LoginUserType = TypeOf<typeof loginUserSchema>
