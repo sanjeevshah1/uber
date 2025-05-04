@@ -34,7 +34,7 @@ userSchema.methods.generateJWT = function() : string{
     const user = this as UserDocument;
     const privateKey = config.get<string>("privateKey");
     console.log("THe private key is", privateKey);
-    const token = jwt.sign({_id : user._id}, privateKey,  { algorithm: "RS256", expiresIn: "1h" })
+    const token = jwt.sign({_id : user._id}, privateKey,  { algorithm: "RS256", expiresIn: "24h" })
     return token;
 }
 userSchema.methods.comparePassword = async function(candidatePassword: string) : Promise<boolean>{
